@@ -7,18 +7,12 @@ date: "2024-02-18"
 Questions:
 
 
-1. How does fixed acidity correlate with pH, density, alcohol content, and wine quality?
-2. What is the relationship between volatile acidity and other chemical properties such as pH, density, alcohol content, and wine quality?
-3. How does the citric acid content relate to pH, density, alcohol content, and wine quality in the dataset?
-4. What is the correlation between residual sugar content and other chemical properties like pH, density, alcohol content, and wine quality?
-5. How do the levels of chlorides correlate with pH, density, alcohol content, and wine quality?
-6. What is the relationship between free sulfur dioxide content and pH, density, alcohol content, and wine quality?
-7. How does the total sulfur dioxide content correlate with pH, density, alcohol content, and wine quality?
-8. What is the correlation between wine density and pH, alcohol content, and wine quality?
-9. How does the pH level relate to density, alcohol content, and wine quality in the dataset?
-10. What is the relationship between sulphate levels and pH, alcohol content, and wine quality?
-11. How does the alcohol content correlate with pH, density, and wine quality in the dataset?
-12. Which chemical properties exhibit the strongest correlations with wine quality, and how do they interact with each other within the dataset?
+1. How does chemical composition of wine effect quality?
+2. What is the correlation between alcohol content?
+3. Correlation of elements with respect to wine rated as good or bad (One hot encoding for transformation)
+4. What is the relationship between volatile acidity and other chemical properties such as pH, density, alcohol content, and wine quality?
+5. How does the citric acid content relate to pH, density, alcohol content, and wine quality in the dataset?
+6. Which chemical properties exhibit the strongest correlations with wine quality, and how do they interact with each other within the dataset?
 ```{r}
 
 library(readr) # Library to read CSV file
