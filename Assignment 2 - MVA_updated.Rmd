@@ -1,0 +1,357 @@
+---
+title: "Assignment 2-2"
+output: html_document
+date: "2024-02-18"
+---
+
+Questions:
+
+
+1. How does chemical composition of wine effect quality?
+2. What is the correlation between alcohol content?
+3. Correlation of elements with respect to wine rated as good or bad (One hot encoding for transformation)
+4. What is the relationship between volatile acidity and other chemical properties such as pH, density, alcohol content, and wine quality?
+5. How does the citric acid content relate to pH, density, alcohol content, and wine quality in the dataset?
+6. Which chemical properties exhibit the strongest correlations with wine quality, and how do they interact with each other within the dataset?
+```{r}
+
+# Library to read CSV file
+library(readr)
+
+# Data visualization libraries
+library(ggplot2)     # ggplot2 for creating versatile plots
+library(ggcorrplot)  # ggcorrplot for visualizing correlation matrices
+library(ggridges)    # ggridges for creating ridge plots
+library(ggvis)       # ggvis for interactive web-based visualizations
+library(ggthemes)    # ggthemes for additional plot themes
+library(cowplot)     # cowplot for arranging and annotating plots
+library(gganimate)   # gganimate for creating animated plots
+
+# Data manipulation and analysis libraries
+library(caret)       # caret for machine learning model building and evaluation
+library(dplyr)       # dplyr for data manipulation
+library(tidyverse)   # tidyverse for data wrangling
+library(GGally)      # GGally for plot matrix visualizations
+
+# Additional visualization libraries
+library(scatterplot3d)  # scatterplot3d for 3D scatter plots
+library(SciViews)       # SciViews for scientific data visualization
+library(car)            # car for additional regression plots
+library(lattice)        # lattice for lattice plots
+library(grid)           # grid for low-level plotting functions
+library(gridExtra)      # gridExtra for arranging multiple plots
+library(RColorBrewer)  # RColorBrewer for additional color palettes
+library(gapminder)     # gapminder for example dataset
+```
+Data Frame:
+[1] Datatypes
+[2] Dataframe view
+```{r}
+
+# Read the CSV file
+df <- read_csv("C:/Rutgers/Subjects/Spring Sem/Multivariate Analysis/Data/wine.csv")
+
+# Retrieve the full column specification
+spec(df)
+
+df
+```
+
+Univarite Analysis:
+[1] Free Sulhpur and Sulphur dioxide have data points above the max range as outliers
+[2] Density, pH, Sulphate Seem to be equally distrbuted at median
+[3] PH seems to be equally distibuted at medium
+[4] Scaling would yeild better result as range will be normallized for all the attributes 
+```{R}
+boxplot(df[,1:5])
+boxplot(df[,6:11])
+
+
+```
+
+
+Bivariate Plot : 
+Wine Quality (Dependent Variable) Bar Plot
+[1] As per observation there are 855 records have vaulue "good" and 744 are rated as bad. Target variable seems to have fair distribution    
+```{r}
+
+# Count the occurrences of "bad" and "good" in the quality column
+quality_counts <- table(df$quality)
+
+# Create a bar plot with count values displayed on top
+ggplot(data = NULL, aes(x = names(quality_counts), y = quality_counts)) +
+  geom_bar(stat = "identity", fill = c("pink", "green")) +
+  geom_text(aes(label = quality_counts), vjust = -0.5, color = "black", size = 4) +  # Add count values on top of bars
+  labs(title = "Count of Quality Ratings", x = "Quality", y = "Count") +
+  theme_minimal()
+```
+
+
+Multivariate Analysis:
+I have split our data into 25 batches to apply star visualization. As due to lots of records the visualization was not clear and very ambiguous to deduce any hypothesis. But only showing 3
+Let's go through the first three plots.
+[1] 'Bad' is skewed more towards left side, whereas 'good' is little contracted from the left side.
+[2] 'Bad' is little contracted while 'good' is quite populated in the bottom
+[3] 'Bad' seems to be skewed again towards left side whereas 'good' has more regular shape and evenly distributed.
+
+Patterns Revealed: As per obeservation there is a possiblity of left skewedness for 'bad' occurences. While 'good' ones are more evenly distributed and contracted
+
+```{r}
+# Total number of rows in the dataset
+total_rows <- nrow(df)
+
+# Calculate the number of rows in each batch
+batch_size <- ceiling(total_rows / 25)
+
+# Create a sequence of indices to split the dataset into batches
+batch_indices <- seq(1, total_rows, by = batch_size)
+
+# Split the dataset into 25 batches
+batches <- lapply(1:(length(batch_indices) - 1), function(i) {
+  df[batch_indices[i]:batch_indices[i + 1] - 1, ]
+})
+
+# Apply the stars() function to each batch and print as star visualization
+for (i in seq_along(batches[1:3])) {  # Iterate over the first three batches only
+  cat("\n=============================================\n")
+  cat("Batch", i, ":\n\n")
+  print(stars(batches[[i]], labels = batches[[i]]$quality))
+  cat("\n=============================================\n")
+}
+
+```
+
+Multivariate Analsyis:
+As per the correlation plot observe the attributes having a strong correlation based on color theme.
+
+Observations:
+[1] Fixed acidity has high correlation with: density and citric acid
+Total Sulphur dioxide and free sulphur have fairly good [2] correlation
+[3] PH is negatively correlated to fixed acidity.
+Volatile acid and citric acid have a fair negative correlation 
+
+[4] THere are a few more observations and data seems to have highly related attributes. Which incates we can perform deeper analysis
+```{r}
+
+
+
+correlation_matrix<- cor(df[,0:11])
+ggcorrplot(correlation_matrix,type = "lower", lab = TRUE)
+```
+Data Preprocessing:
+[1] one hot encoding: To check correlation of these parameters to     good and bad qualtiy of wine
+```{R}
+
+
+# Define a function to identify categorical columns
+is_categorical <- function(col_type) {
+  identical(col_type, "character")  # Check if the column type is character
+}
+
+# Extract the column names and their data types from the dataframe
+col_names <- names(df)
+col_types <- sapply(df, class)
+
+# Identify categorical columns in the dataframe
+categorical_cols <- col_names[sapply(col_types, is_categorical)]
+
+# Apply one-hot encoding to the categorical columns
+dummy_model <- dummyVars(~., data = df[, categorical_cols])
+df_categorical_encoded <- predict(dummy_model, newdata = df[, categorical_cols])
+
+# Combine the encoded categorical columns into a single dataframe
+df_final <- cbind(df[, !col_names %in% categorical_cols], df_categorical_encoded)
+
+# View the first few rows of the final combined dataframe
+head(df_final)
+
+```
+
+Multivariate plot
+Now  our data into binary variable for good and bad we can clearly observe that:
+
+[1]Quality of good is positively correlated wit alcohol 
+[2] Whereas bad quality is negatively correlated
+[3]Same relation with sulphates
+[4]density, total sulfur dioxide and chlorides are neagtively correlated with good quality and vice versa
+[5] PH and residual sugar have least correlation to quality of wine
+Great, now we have identified the features that make wine good and bad.
+```{r}
+
+correlation_matrix<- cor(df_final[,1:13])
+ggcorrplot(correlation_matrix,type = "lower", lab = TRUE)
+
+```
+3D Visualization: 3 Varaites
+[1] Observation: The matrix elements on the right side seem to be scattered and left ones seem to be clusetered and densely populated. But it is difficult to come to a conculsion due to difficulty in viewing each element
+
+As per my observation based on 3D Scatter plot
+
+[1] Quality of wine drops when acidity increases
+[2] Quality of wine remains consistent with respect to alcohol contet with low acidity
+```{r}
+
+
+s3d <- scatterplot3d(df$`fixed acidity`, df$alcohol,df$pH,pch=c(1,16)[as.numeric(df$quality)],xlab="fixed acidity", ylab="alcohol", angle=45,zlab="Quality of Wine", lty.hide=2,type="h",y.margin.add=0.1,font.axis=2,font.lab=2)
+
+```
+Data Cleaning: 
+Using correlated columns:
+[1] Lets apply this and remove columns that are not correlated
+ Density shows some linear correlation for quality of Wine towards  edges.
+ 
+ Obesrvation:
+[2] pH shows negative correlation for fixed acditiy for both  quality coffee towards edges.
+[3]Some difficult to understand due to many elements
+
+```{r}
+super.sym <- trellis.par.get("superpose.symbol")
+super.sym$superpose.symbol$pch <- c(1,16,rep(1,5))
+super.sym$superpose.symbol$col <- rep("#000000",7)
+trellis.par.set(super.sym)
+splom(~df, groups = df$quality, data = df, ps=0.5, varname.cex = .5,panel = panel.superpose,key = list(columns = 2,points = list(pch = super.sym$pch[1:2], col=super.sym$col[1:2]),text = list(c("Bad", "Good"))))
+
+```
+Multivarite Advance analysis:
+Obervations :
+[1] As per this plot we can see that Alcohol plots for good and     bad are not overlapping and shows opposite pattern. This          indicates that alcohol variable can be used for further models
+
+[2]Similar for volatile acid but not opposite trend, only             slightly deviating, meanignful variable and can be used int       further analysis
+```{r}
+
+ggscatmat(df, columns=1:12, color="quality")
+```
+Bi Variate Plot:
+Obervation:
+[1] Alcohol vs Density plot: Density seems to be negatively           correlated to alcohol content, 
+[2] possibility could be density of other contents to wine leading     to low quality as high alcohol score has been graded as good      quality.
+[3] Correlation line: slope seems to be negative, hence negatively correlated.
+```{R}
+# Create a data frame from your existing 'df' object
+df1 <- df_final[!sapply(df_final, is.function)] 
+
+# Attach the 'df' data frame to the search path
+attach(df)
+df
+# Now you can use variables in 'df' directly without referencing the data frame
+plot(df_final$density ~ df_final$alcohol)
+abline(lm(df_final$density ~ df_final$alcohol), col = "red")
+```
+Bivariate plot:
+
+PH content vs Citric Acid:
+observations:
+[1] As per observation we can infer that data blots are densely packed andc indicating less correlation between citric acid content and pH.
+[2]pH seems to remain in same value indicating less knowledge about other variables
+```{R}
+plot(pH ~ `citric acid`, col="steelblue", pch=3, main="Wine Data", xlab="citric acid content of wine", 
+     ylab="ph content of wine", xlim=c(0,3))
+
+```
+Bivariate Analysis:
+pH vs Citric Acid:
+Observations:
+
+[1] There seems to be little correlation as with decreasing pH, Citric acid is increasing.
+```{r}
+xyplot(pH ~ `citric acid`)
+xyplot(pH ~ `citric acid` | alcohol)
+```
+
+
+
+
+Bi Variate analysis:
+
+volatile acidity vs alcohol:
+[1]Comparing correlated variable observed earlier but we can see they both follow a similar pattern as per scatter plot. 
+
+```{R}
+
+
+
+# ggplot
+ggplot(df, aes(x = alcohol, y = `volatile acidity`)) + geom_point()
+
+```
+Multivariate Analysis:
+Volatile acidity vs pH vs Qualtiy=good only
+
+[1] Good quality wine infers to lighter tone of blue color
+We can see that good quality coffee in the first plot that it drops with increasing volatile acidity but remains unaffectde by pH
+
+Volatile acidity vs pH vs Qualtiy=bad only
+[2] inverse for bad quality wine, bad quality wine is ranging towards high volatile acidity
+```{r}
+ggplot(df_final, aes(x = pH, y = `volatile acidity`)) + geom_point(aes(color = `qualitygood`))
+
+ggplot(df_final, aes(x = pH, y = `volatile acidity`)) + geom_point(aes(color = `qualitybad`))
+```
+Bivariate Analysis:
+Alocohol vs Residual Sugar:
+[1] Alcohol seems to be unaffected by residual sugar like other       columns hence won't be used for multivariate models.
+```{R}
+ggplot(df_final, aes(x = `residual sugar`, y = `alcohol`)) + xlim(0, 3) + geom_point(colour = "steelblue", pch = 3) + 
+  labs(x = "Residual sugar", y = "alcohol", title = "Wine Data") 
+
+
+```
+Univariate
+[1] Total sulphur dioxide has low for most of the dataset as per      histogram plot.
+[2] Same for volatile acidity but it is more evenly distributed       towards midpoint.
+```{r}
+# bar chart
+ggplot(df, aes(`total sulfur dioxide`)) + geom_bar(position = "stack") 
+ggplot(df, aes(`volatile acidity`)) + geom_bar(position = "stack") 
+
+```
+Univariate:
+
+There are less records for high alcohol content in entire data frame as histogram is skewed (populated) towards left(low value range)
+```{R}
+# histogram
+ggplot(df, aes(alcohol)) + geom_histogram()
+ggplot(df, aes(alcohol)) + geom_histogram(aes(fill = after_stat(count)))
+```
+Bivariate plot:
+
+[1] As per regression we can determine that alcohol is inveresly      correlated to volatile acidity as the slope is negative.
+
+[2] We can also confirm on our hypothesis that citric acid is         inversely correlated to pH content in wine as per the negative     slope
+
+[3] As per regression model for stat_smooth we can detemrine that     as the volatile acidity increase wine quality rating will drop     further 
+
+```{R}
+# regression
+ggplot(df, aes(x = alcohol, y = `volatile acidity`)) + geom_point() + geom_smooth(method = lm)
+ggplot(df, aes(x = pH, y = `citric acid`)) + geom_point() + stat_smooth()
+ggplot(df_final, aes(x = `volatile acidity`, y = `qualitygood`)) + geom_point() + stat_smooth()
+```
+
+Bi variate plot:
+[1] As per observation citric acid seems to be directly               proportional to sulfur oxide as at base level plot seems to       have density and decarease as the value goes high
+```{R}
+# violin plot 
+ggplot(df, aes(x = `total sulfur dioxide`, y = `citric acid`)) + geom_violin()
+ggplot(df, aes(x = `alcohol`, y = `sulphates`)) + geom_violin()
+
+```
+Univariate Plot:
+As per observation citric acid seems to be directly proportional to sulfur oxide as at base level plot seems to have density and decarease as the value goes high. Also there are few outliers which cross the highest point value (highest quartile)
+```{r}
+# box plot
+ggplot(df, aes(x = `citric acid`, y = `total sulfur dioxide`)) + geom_boxplot()
+ggplot(df, aes(x = `citric acid`, y = `citric acid`)) + geom_boxplot() + coord_flip()
+```
+Univairate plot
+[1]Density is high for moderate ph
+[2]alcohol and densely populated is high for moderate ph
+```{r}
+# density plot and ggridges
+
+ggplot(df, aes(x = pH, fill = `citric acid`, color = `density`)) + geom_density() 
+ggplot(df, aes(x = pH, fill = `citric acid`, color = `alcohol`)) + geom_density(alpha = 0.3, aes(y = ..scaled..)) 
+```
+
+
+```
